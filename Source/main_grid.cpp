@@ -1,6 +1,7 @@
 #include <sstream>
 #include <vector>
 #include <iostream>
+#include <fstream>
 
 namespace types
 {
@@ -166,6 +167,137 @@ void CreateFont(
 	std::cout << "Done" << std::endl;*/
 }
 
+// -- reading CSV files --
+
+void ReadFileToVector( const std::string& filename, std::vector< std::string >& output )
+{
+	std::ifstream ifile(filename.c_str());
+
+    while( ifile.good() ) 
+	{
+        std::string line;
+        std::getline(ifile, line);
+		output.push_back( line );
+    }
+
+	ifile.close();
+}
+
+std::string RemoveWhitespace( std::string line )
+{
+	size_t position = line.find_first_not_of(" \t\r\n");
+    if( position != 0 ) 
+		line.erase( 0,  position );
+
+    position = line.find_last_not_of(" \t\r\n");
+    if( position != line.size() - 1 )
+		line.erase( position+1 );
+
+	return line;
+}
+
+
+size_t StringFind( const std::string& _what, const std::string& _line, size_t _begin = 0 )
+{
+	size_t return_value = _line.find( _what, _begin );
+	
+	if ( return_value == _line.npos )
+		return return_value;
+
+	size_t quete_begin = _line.find("\"", _begin );
+
+	if ( quete_begin == _line.npos || quete_begin > return_value )
+		return return_value;
+
+	size_t quete_end = _line.find( "\"", quete_begin+1 );
+	
+	while( quete_begin < return_value )
+	{
+		if( quete_end > return_value )
+		{
+			return_value = _line.find( _what, return_value+1 );
+			if ( return_value == _line.npos ) 
+				return return_value;
+		}
+
+		if( quete_end < return_value )
+		{
+			quete_begin = _line.find( "\"", quete_end+1 );
+			quete_end   = _line.find( "\"", quete_begin+1 );
+		}
+	}
+
+	return return_value;
+}
+
+int StringCount( const std::string& what, const std::string& line )
+{
+	int result = 0;
+	size_t pos = StringFind( what, line, 0 );
+	while( pos != line.npos )
+	{
+		result++;
+		pos = StringFind( what, line, pos + what.length() );
+	}
+
+	return result;
+}
+
+
+std::vector<std::string> StringSplit( const std::string& _separator, std::string _string )
+{
+    std::vector <std::string> array;
+    size_t position = StringFind( _separator, _string );
+	
+	while ( position != _string.npos )
+    {
+        if ( position != 0 )
+            array.push_back( _string.substr( 0, position ) );
+
+		_string.erase( 0, position + _separator.length() );
+
+        position = StringFind( _separator, _string );
+    }
+
+	if ( _string.empty() == false )
+        array.push_back( _string );
+
+    return array;
+}
+
+void LoadCSVFile( const std::string& csv_file, ceng::CArray2D< std::string >& result )
+{
+	std::vector< std::string > input;
+	ReadFileToVector( csv_file, input );
+
+	if( input.empty() ) 
+		return;
+
+	int height = input.size();
+	int width = 1;
+	for( size_t i = 0; i < input.size(); ++i )
+	{
+		int count = StringCount( ",", input[i] );
+		if( count > width ) 
+			width = count;
+	}
+
+	width++;	// 1,2 = 1*,
+
+	result.Resize( width, height );
+
+	for( int y = 0; y < (int)input.size(); ++y )
+	{
+		std::vector< std::string > data = StringSplit( ",", input[y] );
+		for( int x = 0; x < (int)data.size(); ++x )
+		{
+			cassert( result.IsValid( x, y ) );
+			result.At( x, y ) = RemoveWhitespace( data[x] );
+		}
+	}
+}
+
+
 void BlitImage( ceng::CArray2D< Uint32 >& blit_this, ceng::CArray2D< Uint32 >& to_here, int pos_x, int pos_y )
 {
 	for( int y = 0; y < blit_this.GetHeight(); ++y )
@@ -310,6 +442,49 @@ void DoAGrid( const GridParams& params, const std::string& output_filename )
 	SaveImage( output_filename, image );
 }
 
+void PrintAGrid( ceng::CArray2D< std::string > elements, GridParams params, std::string output_filename )
+{
+	ceng::CArray2D< Uint32 > image( params.image_w, params.image_h );
+	image.SetEverythingTo( params.background_color );
+	CreateFont( params.font, params.font_size );
+
+	// SaveImage( output_filename, image );
+
+	float square_w = params.image_w / (float)elements.GetWidth();
+	float square_h = params.image_h / (float)elements.GetHeight();
+	ceng::CArray2D< Uint32 > border( (int)(square_w + 0.5f), (int)(square_h + 0.5f) );
+	
+	for( int y = 0; y < border.GetHeight(); ++y )
+	{
+		for( int x = 0; x < border.GetWidth(); ++x )
+		{
+			Uint32 c = params.foreground_color;		
+			if( x >= params.border_size && x < border.GetWidth() - params.border_size &&
+				y >= params.border_size && y < border.GetHeight() - params.border_size )
+			{
+				c = params.background_color;
+			}
+			border.At( x, y ) = c;
+		}
+	}
+
+	for( int y = 0; y < elements.GetHeight(); ++y )
+	{
+		for( int x = 0; x < elements.GetWidth(); ++x )
+		{
+			types::ivector2 pos( x, y );
+			pos.x *= square_w;
+			pos.y *= square_h;
+
+			BlitImage( border, image, pos.x, pos.y );
+			BlitText( elements.At( x, y ), image, pos.x + border.GetWidth() / 2, pos.y + border.GetHeight() / 2, params.foreground_color );
+
+		}
+	}
+
+	SaveImage( output_filename, image );
+}
+
 int main(int argc, char *argv[])
 {
 	
@@ -325,14 +500,31 @@ int main(int argc, char *argv[])
 	//};
 
 	GridParams gridparams;
-	gridparams.image_w = 2480;
-	gridparams.image_h = 1024;
-	gridparams.n = 60;
+	gridparams.image_w = 3034;
+	gridparams.image_h = 2135;
+	gridparams.n = 72;
 	gridparams.font = "data/fonts/arial.ttf";
 	gridparams.font_size = 64;
 	gridparams.background_color = 0xFFFFFFFF;
 	gridparams.foreground_color = 0x000000FF;
 	gridparams.border_size = 5;
-	DoAGrid( gridparams, "grid_test.png" );
+	
+
+	ceng::CArray2D< std::string > elements;
+	LoadCSVFile( "planets.txt", elements );
+
+	/*elements.Resize( 5, 10 );
+	for( int y = 0; y < elements.GetHeight(); ++y )
+	{
+		for( int x = 0; x < elements.GetWidth(); ++x )
+		{
+			std::stringstream ss;
+			ss << x << y;
+			elements[x][y] = ss.str();
+		}
+	}*/
+
+	PrintAGrid( elements, gridparams, "printout.png" );
+	// DoAGrid( gridparams, "grid_test.png" );
 	return 0;
 }

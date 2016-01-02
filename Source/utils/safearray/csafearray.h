@@ -50,11 +50,11 @@ public:
 			_size = other._size;
 		}
 
-		/*
+		
 		for( SizeType i = 0; i < Size(); ++i ) 
 			data[ i ] = other.Rand( i );
-		*/
-		memcpy( data, other.data, Size() * sizeof( Type ) );
+		
+		// memcpy( data, other.data, Size() * sizeof( Type ) );
 		// fast_memcpy( data, other.data, Size() * sizeof( Type ) );
 		// X_aligned_memcpy_sse2( data, other.data, Size() * sizeof( Type ) );
 
@@ -97,9 +97,11 @@ public:
 			_size = s;
 			
 			
-			/*for( SizeType i = 0; i < Size(); ++i ) 
-				data[ i ] = Type();*/
+			for( SizeType i = 0; i < Size(); ++i ) 
+				data[ i ] = Type();
+			/*
 			memset( data, (int)Type(), Size() * sizeof( Type ) );
+			*/
 		}
 	}
 
