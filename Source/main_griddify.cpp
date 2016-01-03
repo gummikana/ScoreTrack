@@ -638,45 +638,26 @@ void Griddify( GriddifyParams params, const ceng::CArray2D< std::string >& cvs_f
 
 int main(int argc, char *argv[])
 {
+	for( int i = 0; i < argc; ++i )
+	{
+		std::cout << i << ": " << argv[i] << std::endl;
+	}
+
+	if( argc < 3 )
+	{
+		std::cout << "needs more params e.g." << std::endl <<
+			"griddify tokens.txt output/token_ (2480) (3508)" << std::endl;
+		return 0;
+	}
+	
 	GriddifyParams params;
 	params.pagesize.Set( 2480, 3508 );
 	params.bordersize.Set( 4, 4 );
 
 	ceng::CArray2D< std::string > elements;
-	LoadCSVFile( "tokens.txt", elements );
+	LoadCSVFile( argv[1], elements );
 
-	Griddify( params, elements, "output/tokens_" );
-	//struct GridParams
-	//{
-	//	int image_w;
-	//	int image_h;
-	//	int n;		// number of elements
-	//	std::string font;
-	//	Uint32 background_color;
-	//	Uint32 foreground_color;
-	//	int border_size;
-	//};
-
-	/*
-	GridParams gridparams;
-	gridparams.image_w = 1024;
-	gridparams.image_h = 2135;
-	gridparams.n = 72;
-	gridparams.font = "data/fonts/arial.ttf";
-	gridparams.font_size = 64*2;
-	gridparams.background_color = 0xFFFFFFFF;
-	gridparams.foreground_color = 0x000000FF;
-	gridparams.border_size = 5;
+	Griddify( params, elements, argv[2] );
 	
-
-	ceng::CArray2D< std::string > elements;
-	LoadCSVFile( "destroyed_planets.txt", elements );
-	PrintAGrid( elements, gridparams, "printout.png" );
-	*/
-
-	/*
-
-	*/
-	// DoAGrid( gridparams, "grid_test.png" );
 	return 0;
 }
