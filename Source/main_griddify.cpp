@@ -559,7 +559,22 @@ void Griddify( GriddifyParams params, const ceng::CArray2D< std::string >& cvs_f
 	ceng::CArray2D< Uint32 > data( params.pagesize.x, params.pagesize.y );
 	data.SetEverythingTo( 0xFFFFFFFF );
 
-	types::ivector2 size( 245, 245 );
+	types::ivector2 size( 0, 0 );
+	for( int y = 1; y < cvs_file.GetHeight(); ++y )
+	{
+		int count = CastFromString< int >( cvs_file.At( 0, y ) );
+		std::string filename = cvs_file.At( 1, y );
+		if( count <= 0 || filename.empty() ) 
+			continue;
+		
+		ceng::CArray2D< Uint32 > image;
+		LoadImage( filename, image );
+		if( image.GetWidth() > size.x ) 
+			size.x = image.GetWidth();
+		if( image.GetHeight() > size.y ) 
+			size.y = image.GetHeight();
+	}
+
 	size += params.bordersize;
 
 	int perpage_w = params.pagesize.x / size.x;
