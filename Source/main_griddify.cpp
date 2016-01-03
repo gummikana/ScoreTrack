@@ -62,9 +62,9 @@ struct TempTexture
 		int co = ( y * width ) * bpp + x * bpp;
 
 		Uint32 result = 
-			data[ co ] << 16 |
+			data[ co ] << 0 |
 			data[ co+1 ] << 8 |
-			data[ co+2 ] << 0; 
+			data[ co+2 ] << 16; 
 
 		if( include_alpha ) 
 			result |= data[ co+3 ] << 24;
